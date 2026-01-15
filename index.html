@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tes Fokus Mata & Telinga</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Animasi getar untuk efek kaget */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .shake-screen {
+            animation: shake 0.5s;
+            animation-iteration-count: infinite;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen overflow-hidden selection:bg-none">
+
+    <!-- Halaman Awal (Pancingan) -->
+    <div id="start-screen" class="text-center p-6 bg-white rounded-xl shadow-2xl max-w-sm mx-4 transition-all duration-300">
+        <div class="mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">Tes Konsentrasi</h1>
+        <p class="text-gray-600 mb-6">Klik tombol di bawah ini, tutup mata, dan dengarkan suara relaksasi yang keluar.</p>
+        
+        <button onclick="startPrank()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transform transition active:scale-95 shadow-lg">
+            Mulai Tes Sekarang
+        </button>
+        <p class="text-xs text-gray-400 mt-4">*Pastikan volume HP kamu aktif agar terdengar.</p>
+    </div>
+
+    <!-- Halaman Prank (Muncul setelah klik) -->
+    <div id="prank-screen" class="hidden fixed inset-0 bg-red-600 flex-col items-center justify-center z-50 text-center">
+        <h1 class="text-6xl md:text-9xl font-black text-yellow-300 mb-4 drop-shadow-md">WKWKWK!</h1>
+        <p class="text-white text-2xl font-bold mb-8">HP KAMU KENA HACK!</p>
+        <p class="text-white text-lg">(Enggak deng, bercanda doang 😜)</p>
+        
+        <div class="mt-8 text-9xl">
+            👻
+        </div>
+        
+        <button onclick="stopPrank()" class="mt-12 bg-white text-red-600 font-bold py-2 px-4 rounded hover:bg-gray-200">
+            Matikan Suara
+        </button>
+    </div>
+
+    <script>
+        let audioContext;
+        let oscillator;
+        let isPlaying = false;
+
+        function startPrank() {
+            // 1. Ubah Tampilan
+            document.getElementById('start-screen').classList.add('hidden');
+            const prankScreen = document.getElementById('prank-screen');
+            prankScreen.classList.remove('hidden');
+            prankScreen.classList.add('flex');
+            
+            // Tambah efek getar pada body
+            document.body.classList.add('shake-screen');
+            document.body.classList.remove('bg-gray-100'); // Hapus background kalem
+
+            // 2. Mainkan Suara 'Bising' menggunakan Web Audio API
+            // Ini membuat suara tanpa perlu file mp3, jadi loading cepet banget
+            try {
+                // Membuat Audio Context
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioContext();
+
+                // Membuat Oscillator (sumber suara)
+                oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                // Tipe gelombang suara: 'sawtooth' suaranya kasar dan kaget (mirip buzzer)
+                oscillator.type = 'sawtooth'; 
+                
+                // Frekuensi awal (nada tinggi melengking)
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime); 
+                
+                // Efek sirine (naik turun frekuensi)
+                oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+                oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.2);
+                oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.3);
+
+                // Volume Gain (Maximal di browser adalah 1.0, kita set wajar tapi tipe gelombangnya bikin keras)
+                gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+
+                // Sambungkan: Oscillator -> Volume -> Speaker
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                // Mulai
+                oscillator.start();
+                isPlaying = true;
+
+                // Loop sirine manual sederhana
+                setInterval(() => {
+                    if(isPlaying && audioContext.state === 'running') {
+                        const osc = audioContext.createOscillator();
+                        const gn = audioContext.createGain();
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(Math.random() * 1000 + 500, audioContext.currentTime);
+                        gn.gain.value = 0.3;
+                        osc.connect(gn);
+                        gn.connect(audioContext.destination);
+                        osc.start();
+                        osc.stop(audioContext.currentTime + 0.1);
+                    }
+                }, 200);
+
+            } catch (e) {
+                console.log("Audio error: " + e);
+                alert("Yah, browser kamu memblokir suara isengnya :(");
+            }
+        }
+
+        function stopPrank() {
+            // Refresh halaman untuk reset
+            location.reload();
+        }
+    </script>
+</body>
+</html>
+
